@@ -43,10 +43,6 @@ A **cross-platform desktop application** built with **Electron.js** and **React.
 - All data is stored **locally** using Electron
 - Ensures **privacy** and **offline access**—no backend required
 
-### ♿ Accessibility
-- Full **keyboard navigation**
-- **ARIA-compliant** components for inclusive usability
-
 ---
 
 ## 🚀 Tech Stack
