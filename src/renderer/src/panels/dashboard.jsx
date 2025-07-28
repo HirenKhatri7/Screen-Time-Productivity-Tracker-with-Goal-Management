@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Clock, Activity, TrendingUp, Target, Eye, RotateCcwIcon, Delete, Trash2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { format, startOfDay, subDays } from 'date-fns'
+import ActiveGoalSelector from "../components/ActiveGoalSelector";
 
 
-export default function Dashboard({ userName }) {
+export default function Dashboard({ userName,activeGoalId, setActiveGoalId,goals }) {
 
   const [usageData, setUsageData] = useState({})
   const [showDialog, setShowDialog] = useState(false)
@@ -109,6 +110,7 @@ const categoryColors = {
             <p className="text-gray-400">Your screen time overview for today</p>
           </div>
           <div className="flex items-center justify-center gap-1">
+            <ActiveGoalSelector activeGoalId={activeGoalId} setActiveGoalId = {setActiveGoalId} goals = {goals}/>
             <button
               onClick={() => setShowDialog(!showDialog)}
               className="bg-white/5 rounded-sm backdrop-blur-sm p-2 text-white"

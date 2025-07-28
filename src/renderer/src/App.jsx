@@ -1,4 +1,4 @@
-import React,{useState,useEffect} from 'react'
+import React,{useState,useEffect,useCallback} from 'react'
 import Sidebar from './components/Sidebar'
 import './assets/main.css'
 import Dashboard from './panels/dashboard'
@@ -14,8 +14,28 @@ function App() {
   const [tempName, setTempName] = useState('')
   const [user,setUser] = useState('')  
   const [showNameModal,setShowNameModal] = useState(false)
+  const [activeGoalId, setActiveGoalId] = useState('none');
+  const [apps, setApps] = useState([])
+  const [goals, setGoals] = useState([])
 
-
+      const handleRefresh = useCallback(async () => {
+          const goalsData = await window.electron.ipcRenderer.invoke('get-goals');
+          setGoals(goalsData);
+      }, []);
+  
+      const getApps = useCallback(async () => {
+          const appsUsed = await window.electron.ipcRenderer.invoke('get-apps');
+          let tempApps = []
+          appsUsed.forEach(app => {
+              tempApps.push(app.app_name);
+          });
+          setApps(tempApps);
+      }, []);
+  
+      useEffect(() => {
+          handleRefresh();
+          getApps()
+      }, [handleRefresh, getApps]);
   useEffect(() => {
 
     if(!checkUserName()){
@@ -42,6 +62,7 @@ function App() {
       setTempName('')
     }
   }
+  
 
   const checkUserName = async () => {
   const data = await window.electron.ipcRenderer.invoke('get-username');
@@ -56,8 +77,8 @@ function App() {
         <Sidebar setActiveTab={setActiveTab} activeTab={activeTab} exportData={exportData} clearData={clearData} userName={user} setShowNameModal={setShowNameModal}></Sidebar>
         <div className='flex-1 min-h-screen'>
           <div className='p-8'>
-            {activeTab === 'dashboard' && <Dashboard userName = {user}/>}
-            {activeTab === 'goals' && <Goals userName = {user}/>} 
+            {activeTab === 'dashboard' && <Dashboard userName = {user} activeGoalId={activeGoalId} setActiveGoalId = {setActiveGoalId} goals={goals}/>}
+            {activeTab === 'goals' && <Goals userName = {user} activeGoalId={activeGoalId} setActiveGoalId = {setActiveGoalId} preGoals={goals} apps={apps} handleRefresh = {handleRefresh} getApps = {getApps}/>} 
              {showNameModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-slate-800 rounded-xl p-8 border border-white/10 w-full max-w-md mx-4">

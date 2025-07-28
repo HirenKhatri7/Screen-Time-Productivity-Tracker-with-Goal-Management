@@ -19,13 +19,14 @@ function initializeDatabase(){
       priority TEXT CHECK(priority IN ('low', 'medium', 'high')) DEFAULT 'medium',
       start_date TEXT NOT NULL,
       end_date TEXT NOT NULL,
-      created_at TEXT NOT NULL);
+      created_at TEXT NOT NULL,
+      is_completed INTEGER DEFAULT 0);
         `
     );
     
     db.exec(`CREATE TABLE IF NOT EXISTS subgoals (
       id TEXT PRIMARY KEY ,
-      goal_id INTEGER NOT NULL,
+      goal_id TEXT NOT NULL,
       title TEXT NOT NULL,
       is_completed INTEGER DEFAULT 0,
       created_at TEXT NOT NULL,
@@ -39,6 +40,25 @@ function initializeDatabase(){
         date TEXT NOT NULL,
         UNIQUE(appName,date)
         );`);
+
+    db.exec(`CREATE TABLE IF NOT EXISTS GoalAppLinks(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      goal_id TEXT NOT NULL,
+      app_name TEXT NOT NULL,
+      FOREIGN KEY (goal_id) REFERENCES goals(id) ON DELETE CASCADE,
+      UNIQUE(goal_id,app_name)
+      );
+      `)
+
+    db.exec(`CREATE TABLE IF NOT EXISTS GoalAppTimeLog(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      goal_id TEXT NOT NULL,
+      app_name TEXT NOT NULL,
+      date TEXT NOT NULL,
+      time INTEGER NOT NULL,
+      FOREIGN KEY (goal_id) REFERENCES goals(id) ON DELETE CASCADE,
+      UNIQUE(goal_id,app_name,date)
+      );`)
     
 }
 

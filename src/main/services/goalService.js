@@ -13,6 +13,34 @@ function addGoal(goal){
     }
 }
 
+function logTimeForGoalApp(goalId, appName) {
+  const todayDate = new Date().toLocaleDateString('en-CA', {
+  timeZone: 'Asia/Kolkata'
+});
+  const stmt = db.prepare(`
+    INSERT INTO GoalAppTimeLog (goal_id, app_name, date, time)
+    VALUES (?, ?, ?, 1)
+    ON CONFLICT(goal_id, app_name, date)
+    DO UPDATE SET time = time + 1;
+  `);
+  stmt.run(goalId, appName, todayDate);
+}
+
+function updateGoalAppLinks(goalId, appNames = []) {
+  // Use a transaction for efficiency
+  const transaction = db.transaction(() => {
+    // 1. Remove all existing links for this goal
+    db.prepare('DELETE FROM GoalAppLinks WHERE goal_id = ?').run(goalId);
+
+    // 2. Insert the new links
+    const stmt = db.prepare('INSERT INTO GoalAppLinks (goal_id, app_name) VALUES (?, ?)');
+    for (const appName of appNames) {
+      stmt.run(goalId, appName);
+    }
+  });
+  transaction();
+}
+
 function getGoals() {
   const goalsStmt = db.prepare("SELECT * FROM goals ORDER BY created_at DESC;");
   const goals = goalsStmt.all().map(g => ({
@@ -24,6 +52,7 @@ function getGoals() {
       startDate: g.start_date,
       endDate: g.end_date,
       createdAt: g.created_at,
+      isCompleted:g.is_completed === 1,
       subtasks: [] 
   }));
 
@@ -50,6 +79,54 @@ function getGoals() {
       }
   });
 
+
+  const appLinkStmt = db.prepare("SELECT goal_id,app_name FROM GoalAppLinks");
+  const appLinks = appLinkStmt.all();
+
+  const goalLinkedApps = new Map();
+  appLinks.forEach(link => {
+    if(!goalLinkedApps.has(link.goal_id)){
+        goalLinkedApps.set(link.goal_id,new Set());
+    }
+    goalLinkedApps.get(link.goal_id).add(link.app_name);
+  });
+  goals.forEach(goal=>{
+    if(goalLinkedApps.has(goal.id))
+      goal.appLinks = [...goalLinkedApps.get(goal.id)];
+    else
+      goal.appLinks = []
+  })
+
+  const timeLogStmt = db.prepare("SELECT goal_id, app_name, SUM(time) as total_time FROM GoalAppTimeLog GROUP BY goal_id, app_name");
+  const timeLog = timeLogStmt.all();
+
+  goals.forEach(goal => {
+    goal.timeBreakDown = [];
+    goal.productiveTime = 0;
+    goal.unProductiveTime = 0;
+
+    const linkedApps = goalLinkedApps.get(goal.id) || new Set();
+
+    timeLog
+    .filter(log => log.goal_id === goal.id)
+    .forEach(log => {
+        const isProductive = linkedApps.has(log.app_name);
+        
+        goal.timeBreakDown.push({
+          appName: log.app_name,
+          time: log.total_time,
+          isProductive: isProductive
+        });
+
+        if (isProductive) {
+          goal.productiveTime += log.total_time;
+        } else {
+          goal.unProductiveTime += log.total_time;
+        }
+    });
+  });
+
+
   return goals;
 }
 
@@ -63,9 +140,11 @@ function update_goal(updatedGoal){
         category = ?,
         priority = ?,
         start_date = ?,
-        end_date = ?
+        end_date = ?,
+        is_completed = ?
     WHERE id = ?
         `);
+        
         updateGoalStmt.run(
   updatedGoal.title,
   updatedGoal.description,
@@ -73,6 +152,7 @@ function update_goal(updatedGoal){
   updatedGoal.priority,
   updatedGoal.startDate,
   updatedGoal.endDate,
+  updatedGoal.isCompleted ? 1 : 0,
   updatedGoal.id 
 );
 const goal = updatedGoal
@@ -89,22 +169,38 @@ const subgoalsStmt = db.prepare("INSERT INTO subgoals (id, goal_id, title, is_co
     }
 }
 
+function markGoalAsCompleted(goal){
+  const updateGoalStmt = db.prepare(`
+    UPDATE goals
+    SET
+        is_completed = 1
+    WHERE id = ?
+        `);
+        updateGoalStmt.run(
+  
+  goal.id 
+);
+
+
+
+const deleteSubtasksStmt = db.prepare(`DELETE FROM subgoals WHERE goal_id = ?`);
+deleteSubtasksStmt.run(goal.id);
+
+const subgoalsStmt = db.prepare("INSERT INTO subgoals (id, goal_id, title, is_completed, created_at) VALUES (?, ?, ?, ?, ?)");
+    if(goal.subtasks.length > 0){
+        goal.subtasks.forEach(subtask => {
+            subgoalsStmt.run(subtask.id,goal.id,subtask.title,1,subtask.createdAt)
+        });
+    }
+
+}
+
 function deleteGoalWithSubtasks(goalId) {
-  const deleteSubtasksStmt = db.prepare(`DELETE FROM subgoals WHERE goal_id = ?`);
+  
   const deleteGoalStmt = db.prepare(`DELETE FROM goals WHERE id = ?`);
 
-
-  const transaction = db.transaction((goalId) => {
-    deleteSubtasksStmt.run(goalId);
     deleteGoalStmt.run(goalId);
-  });
-
-  try {
-    transaction(goalId);
     
-  } catch (error) {
-    console.error('Failed to delete goal:', error);
-  }
 }
 
 function clearGoalData() {
@@ -117,5 +213,8 @@ export{
     update_goal,
     getGoals,
     addGoal,
-    deleteGoalWithSubtasks
+    deleteGoalWithSubtasks,
+    updateGoalAppLinks,
+    logTimeForGoalApp,
+    markGoalAsCompleted
 }

@@ -1,30 +1,48 @@
-import React, { useState,useEffect,useCallback } from "react";
-import { Plus, Target, Award, TrendingUp, Clock, Calendar, Edit2, Trash2, Circle, CheckCircle,ChevronDown } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Plus, Target, Award, TrendingUp, Clock, Calendar, Edit2, Trash2, Circle, CheckCircle, ChevronDown } from "lucide-react";
 import { format, differenceInDays, isAfter, isBefore } from 'date-fns'
 import Goal from "../components/goal";
+import ActiveGoalSelector from "../components/ActiveGoalSelector";
 
-export default function Goals({userName}) {
-    const [goals, setGoals] = useState([])
+export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoals, apps,handleRefresh, getApps }) {
+    const [goals, setGoals] = useState(preGoals)
+    // const [apps, setApps] = useState([])
     const [filter, setFilter] = useState("all")
     const [showCreateDialog, setShowCreateDialog] = useState(false)
     const [editingGoal, setEditingGoal] = useState(null)
-    const [showSubTask,setShowSubTask] = useState(false)
-
-        const handleRefresh = useCallback(async () =>{
-      const goalsData = await window.electron.ipcRenderer.invoke('get-goals');
-      setGoals(goalsData);
-    
-      
-    },[]);
-    useEffect(() => {
-    
-    handleRefresh()
-      }, [handleRefresh]);
-    
+    const [appLink, setAppLink] = useState([]);
+    const [appInput, setAppInput] = useState('')
+    const [showAppSuggestions, setShowAppSuggestions] = useState(false)
     
 
+    useEffect(() => setGoals(preGoals), [preGoals]);
 
-    
+
+
+    // const handleRefresh = useCallback(async () => {
+    //     const goalsData = await window.electron.ipcRenderer.invoke('get-goals');
+    //     console.log(goalsData);
+    //     setGoals(goalsData);
+    // }, []);
+
+    // const getApps = useCallback(async () => {
+    //     const appsUsed = await window.electron.ipcRenderer.invoke('get-apps');
+    //     let tempApps = []
+    //     appsUsed.forEach(app => {
+    //         tempApps.push(app.app_name);
+    //     });
+    //     setApps(tempApps);
+    // }, []);
+
+    // useEffect(() => {
+    //     handleRefresh();
+    //     getApps()
+    // }, [handleRefresh, getApps]);
+
+
+
+
+
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -32,6 +50,7 @@ export default function Goals({userName}) {
         priority: 'medium',
         startDate: format(new Date(), 'yyyy-MM-dd'),
         endDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+        isCompleted: false,
         subtasks: []
     })
 
@@ -43,11 +62,13 @@ export default function Goals({userName}) {
             priority: 'low',
             startDate: format(new Date(), 'yyyy-MM-dd'),
             endDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+            isCompleted: false,
             subtasks: []
-        })
+        });
+        setAppLink([]);
     }
 
-    const handleCreateGoal = () => {
+    const handleCreateGoal = async () => {
         if (!formData.title.trim()) return;
 
         const newGoal = {
@@ -63,14 +84,20 @@ export default function Goals({userName}) {
                 id: Date.now().toString() + Math.random(),
                 createdAt: new Date().toISOString()
             })),
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            isCompleted: formData.isCompleted
         };
-        
+
         setGoals([...goals, newGoal]);
         resetForm();
         setShowCreateDialog(false);
-        window.electron.ipcRenderer.send('add-goal',newGoal);
-        
+        window.electron.ipcRenderer.send('add-goal', newGoal);
+
+        if (appLink) {
+            window.electron.ipcRenderer.send('update-app-link', { apps: appLink, goal_id: newGoal.id })
+        }
+        await handleRefresh();
+
     };
 
     const handleUpdateGoal = () => {
@@ -95,27 +122,83 @@ export default function Goals({userName}) {
         resetForm()
         setEditingGoal(null)
         setShowCreateDialog(false)
-        window.electron.ipcRenderer.send('update-goal',updatedGoal);
-    }
-    const handleDeleteGoal = (goalId) => {
-        if (confirm('Are you sure you want to delete this goal?')) {
-            setGoals(goals.filter(goal => goal.id !== goalId))
+        window.electron.ipcRenderer.send('update-goal', updatedGoal);
+        if (appLink) {
+            window.electron.ipcRenderer.send('update-app-link', { apps: appLink, goal_id: newGoal.id })
         }
-        window.electron.ipcRenderer.send('delete-goal',goalId)
     }
+    const handleDeleteGoal = (goalId) => {  
+            setGoals(goals.filter(goal => goal.id !== goalId));
+            window.electron.ipcRenderer.send('delete-goal', goalId);
+    }
+    
+    
+    const handleCompleteGoal = (goalId) => {
+        if (confirm('Are you sure you want to mark this goal as completed?')) {
+            setGoals(goals.map(goal => {
+
+                if (goal.id === goalId) {
+
+                    const updatedGoal = {
+                        ...goal,
+                        isCompleted: true,
+
+                        subtasks: goal.subtasks.map(subtask => ({
+                            ...subtask,
+                            isCompleted: true
+                        }))
+
+                    };
+                    window.electron.ipcRenderer.send('mark-goal-completed', updatedGoal);
+                    return updatedGoal;
+                }
+
+
+                return goal;
+            }));
+        }
+    };
+    const handleUncompleteGoal = (goalId) => {
+        if (confirm('Are you sure you want to mark this goal as unComplete?')) {
+            setGoals(goals.map(goal => {
+
+                if (goal.id === goalId) {
+
+                    const updatedGoal = {
+                        ...goal,
+                        isCompleted: false,
+                    };
+
+
+                    window.electron.ipcRenderer.send('mark-goal-completed', updatedGoal);
+
+
+                    return updatedGoal;
+                }
+
+
+                return goal;
+            }));
+        }
+    };
 
     const toggleSubtask = (goalId, subtaskId) => {
         setGoals(goals.map(goal => {
             if (goal.id === goalId) {
-                return {
+                const obj = {
                     ...goal,
                     subtasks: goal.subtasks.map(subtask =>
                         subtask.id === subtaskId
-                            ? { ...subtask, completed: !subtask.completed }
+                            ? { ...subtask, isCompleted: !subtask.isCompleted }
                             : subtask
                     )
                 }
+                console.log("update goal: ", obj);
+                window.electron.ipcRenderer.send('update-goal', obj);
+                return obj
+
             }
+
             return goal
         }))
     }
@@ -125,14 +208,14 @@ export default function Goals({userName}) {
             ...formData,
             subtasks: [...formData.subtasks, { title: '', completed: false }]
         })
-        
+
     }
 
     const updateSubtask = (index, title) => {
         const updatedSubtasks = [...formData.subtasks]
         updatedSubtasks[index] = { ...updatedSubtasks[index], title }
         setFormData({ ...formData, subtasks: updatedSubtasks })
-        
+
     }
 
     const removeSubtask = (index) => {
@@ -140,7 +223,7 @@ export default function Goals({userName}) {
             ...formData,
             subtasks: formData.subtasks.filter((_, i) => i !== index)
         })
-        
+
     }
 
     const startEdit = (goal) => {
@@ -178,6 +261,20 @@ export default function Goals({userName}) {
         return getGoalStatus(goal) === filter
     })
 
+    const addAppLink = (appToAdd) => {
+        if (appToAdd.trim() && !appLink.includes(appToAdd.trim())) {
+            setAppLink([...appLink, appToAdd.trim()]);
+        }
+        setAppInput('');
+        setShowAppSuggestions(false);
+    }
+
+    const removeAppLink = (appToRemove) => {
+        setAppLink(appLink.filter(app => app !== appToRemove));
+    }
+
+    const filteredAppSuggestions = apps.filter(app => app.toLowerCase().includes(appInput.toLowerCase()) && !appLink.includes(app));
+
     const categoryColors = {
         productivity: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
         health: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
@@ -202,11 +299,15 @@ export default function Goals({userName}) {
     return (
         <div className="space-y-8">
             <div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-1">
                     <h1 className="text-3xl font-bold text-white mb-2">{userName}'s Goals</h1>
-                    <button className="bg-white/5 backdrop-blur-sm rounded-xl p-2" onClick={() => setShowCreateDialog(true)}>
-                        <Plus className="text-white"></Plus>
-                    </button>
+                    <div className="flex items-center justify-center gap-1">
+                        <ActiveGoalSelector activeGoalId={activeGoalId} setActiveGoalId={setActiveGoalId} goals={goals} />
+                        <button className="bg-white/5 backdrop-blur-sm rounded-xl p-2" onClick={() => {setShowCreateDialog(true); }}>
+                            <Plus className="text-white"></Plus>
+                        </button>
+                    </div>
+
                 </div>
                 <p className="text-gray-300">your goal analytics is displayed</p>
             </div>
@@ -308,18 +409,20 @@ export default function Goals({userName}) {
                         )}
                     </div>
                 ) : (
-                    filteredGoals.map(goal => {
-                        const progress = getProgress(goal)
-                        const status = getGoalStatus(goal)
-                        const daysLeft = differenceInDays(new Date(goal.endDate), new Date())
-                        const categoryColor = categoryColors[goal.category]
-                        const priorityColor = priorityColors[goal.priority]
+                    <div className="grid grid-cols-3 gap-6 items-start">
+                        {filteredGoals.map(goal => {
+                            const progress = getProgress(goal)
+                            const status = getGoalStatus(goal)
+                            const daysLeft = differenceInDays(new Date(goal.endDate), new Date())
+                            const categoryColor = categoryColors[goal.category]
+                            const priorityColor = priorityColors[goal.priority]
 
 
-                        return (
-                            <Goal goal={goal} status={status} progress={progress} daysLeft={daysLeft} categoryColor={categoryColor} priorityColor={priorityColor} startEdit={startEdit} handleDeleteGoal={handleDeleteGoal} toggleSubtask={toggleSubtask}/>
-                        )
-                    })
+                            return (
+                                <Goal goal={goal} status={status} progress={progress} daysLeft={daysLeft} categoryColor={categoryColor} priorityColor={priorityColor} startEdit={startEdit} handleDeleteGoal={handleDeleteGoal} toggleSubtask={toggleSubtask} handleCompleteGoal={handleCompleteGoal} handleUncompleteGoal={handleUncompleteGoal} />
+                            )
+                        })}
+                    </div>
                 )}
             </div>
 
@@ -335,6 +438,7 @@ export default function Goals({userName}) {
                                 <input
                                     type="text"
                                     value={formData.title}
+                                    autoFocus = {true}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                     className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                                     placeholder="Enter your goal title"
@@ -408,6 +512,90 @@ export default function Goals({userName}) {
                             </div>
 
                             <div>
+                                <label className="block text-gray-300 text-sm font-medium mb-2">
+                                    Linked Apps
+                                </label>
+                                <p className="text-gray-400 text-xs mb-3">
+                                    Connect apps that are relevant to this goal for better tracking
+                                </p>
+
+                                {/* Selected Apps */}
+                                {appLink.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {appLink.map((app, index) => (
+                                            <div
+                                                key={index}
+                                                className="flex items-center space-x-2 bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm border border-purple-500/30"
+                                            >
+                                                <span>{app}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAppLink(app)}
+                                                    className="text-purple-300 hover:text-purple-100 transition-colors"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* App Input */}
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={appInput}
+                                        onChange={(e) => {
+                                            setAppInput(e.target.value)
+                                            setShowAppSuggestions(e.target.value.length > 0)
+                                        }}
+
+                                        onFocus={() => setShowAppSuggestions(appInput.length > 0)}
+                                        className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                                        placeholder="Type app name or select from suggestions"
+                                    />
+
+                                    {/* App Suggestions Dropdown */}
+                                    {showAppSuggestions && filteredAppSuggestions.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-white/20 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                                            {filteredAppSuggestions.slice(0, 8).map((app, index) => (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    onClick={() => addAppLink(app)}
+                                                    className="w-full text-left px-3 py-2 text-white hover:bg-purple-500/20 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                                                >
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded flex items-center justify-center text-xs font-bold">
+                                                            {app.charAt(0)}
+                                                        </div>
+                                                        <span>{app}</span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Quick Add Popular Apps */}
+                                <div className="mt-3">
+                                    <p className="text-gray-400 text-xs mb-2">Quick add:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['VS Code', 'Chrome', 'Slack', 'Figma', 'Notion'].filter(app => !appLink.includes(app)).map((app) => (
+                                            <button
+                                                key={app}
+                                                type="button"
+                                                onClick={() => addAppLink(app)}
+                                                className="text-xs bg-white/5 text-gray-300 px-2 py-1 rounded border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
+                                            >
+                                                + {app}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
                                 <div className="flex items-center justify-between mb-3">
                                     <label className="block text-gray-300 text-sm font-medium">
                                         Subtasks
@@ -456,7 +644,8 @@ export default function Goals({userName}) {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={editingGoal ? handleUpdateGoal : handleCreateGoal}
+                                    onClick={editingGoal ? {handleUpdateGoal} : handleCreateGoal}
+                                    // onClick={() => console.log("create button is active")}
 
 
                                     className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"

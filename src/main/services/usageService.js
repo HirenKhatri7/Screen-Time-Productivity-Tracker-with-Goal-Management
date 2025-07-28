@@ -72,11 +72,19 @@ function clearUsageData() {
     db.prepare('DELETE FROM limits;').run();
 }
 
+function getAppNames(){
+  const stmt = db.prepare("SELECT DISTINCT app_name FROM usage;");
+  const apps = stmt.all();
+
+  return apps;
+}
+
 export{
     logUsage,
     getTodayUsage,
     addLimit,
     getLimits,
     deleteLimit,
-    clearUsageData
+    clearUsageData,
+    getAppNames
 }
