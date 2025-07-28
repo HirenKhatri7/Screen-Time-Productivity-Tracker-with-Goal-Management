@@ -5,5 +5,4 @@ out
 .eslintcache
 *.log*
 *.sqlite
-*.db
-
+usage-log.db
