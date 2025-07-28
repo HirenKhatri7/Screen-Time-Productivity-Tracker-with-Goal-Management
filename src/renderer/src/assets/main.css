@@ -1,2 +1,6 @@
 @import './base.css';
 @import "tailwindcss";
+:root{
+     --color-cream-50: rgba(252, 252, 249, 1);
+     --color-cream-100: rgba(252, 252, 239, 1);
+}

@@ -1,5 +1,5 @@
 import { db } from '../database';
-
+import dayjs from 'dayjs';
 function addGoal(goal){
 
     const goalStmt = db.prepare("INSERT INTO goals (id, title, description, category, priority, start_date, end_date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
@@ -208,6 +208,113 @@ function clearGoalData() {
     
 }
 
+function getTodayProductiveTime(){
+
+   const goalsStmt = db.prepare("SELECT * FROM goals ORDER BY created_at DESC;");
+  const goals = goalsStmt.all().map(g => ({
+      id: g.id,
+      title: g.title,
+      description: g.description,
+      category: g.category,
+      priority: g.priority,
+      startDate: g.start_date,
+      endDate: g.end_date,
+      createdAt: g.created_at,
+      isCompleted:g.is_completed === 1,
+      subtasks: [] 
+  }));
+
+  if (goals.length === 0) {
+      return 0;
+  }
+  const todayDate = new Date().toLocaleDateString('en-CA', {
+  timeZone: 'Asia/Kolkata'
+});
+
+
+  const appLinkStmt = db.prepare("SELECT goal_id,app_name FROM GoalAppLinks");
+  const appLinks = appLinkStmt.all();
+
+  const goalLinkedApps = new Map();
+  appLinks.forEach(link => {
+    if(!goalLinkedApps.has(link.goal_id)){
+        goalLinkedApps.set(link.goal_id,new Set());
+    }
+    goalLinkedApps.get(link.goal_id).add(link.app_name);
+  });
+  goals.forEach(goal=>{
+    if(goalLinkedApps.has(goal.id))
+      goal.appLinks = [...goalLinkedApps.get(goal.id)];
+    else
+      goal.appLinks = []
+  })
+
+  const timeLogStmt = db.prepare("SELECT goal_id, app_name, SUM(time) as total_time FROM GoalAppTimeLog WHERE date = ? GROUP BY goal_id, app_name");
+  const timeLog = timeLogStmt.all(todayDate);
+  let totalProductiveTime = 0
+  
+
+  goals.forEach(goal => {
+    
+    const linkedApps = goalLinkedApps.get(goal.id) || new Set();
+
+    timeLog
+    .filter(log => log.goal_id === goal.id)
+    .forEach(log => {
+        const isProductive = linkedApps.has(log.app_name);
+        
+        
+
+        if (isProductive) {
+          totalProductiveTime += log.total_time;
+        } 
+    });
+  });
+  
+
+  return totalProductiveTime;
+
+}
+
+function getGlobalProductiveStreak(minDailyTime = 15*60) {
+  // Query total time per day summed over all goals and apps
+  const stmt = db.prepare(`
+    SELECT date, SUM(time) as total_time
+    FROM GoalAppTimeLog
+    GROUP BY date
+    HAVING total_time >= ?
+    ORDER BY date DESC
+  `);
+
+  const rows = stmt.all(minDailyTime);
+  console.log(rows);
+
+  if (rows.length === 0) return 0;
+    const todayDate = new Date().toLocaleDateString('en-CA', {
+  timeZone: 'Asia/Kolkata'
+});
+
+  let streak = 0;
+  let currentDate = dayjs(todayDate);
+  
+
+  for (const row of rows) {
+    const loggedDate = dayjs(row.date);
+    
+
+    if (loggedDate.isSame(currentDate, 'day')) {
+      streak++;
+      currentDate = currentDate.subtract(1, 'day');
+    } else {
+      // Non-consecutive day detected - stop counting
+      break;
+    }
+  }
+
+
+  return streak;
+}
+
 export{
     clearGoalData,
     update_goal,
@@ -216,5 +323,8 @@ export{
     deleteGoalWithSubtasks,
     updateGoalAppLinks,
     logTimeForGoalApp,
-    markGoalAsCompleted
+    markGoalAsCompleted,
+    getTodayProductiveTime,
+    getGlobalProductiveStreak
+    
 }

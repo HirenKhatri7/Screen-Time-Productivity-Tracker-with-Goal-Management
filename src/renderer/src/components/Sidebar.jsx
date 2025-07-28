@@ -25,23 +25,23 @@ export default function Sidebar({ setActiveTab, activeTab ,exportData,clearData,
     ]
     return (
 
-        <div className='min-h-screen w-64 bg-black/20 backdrop-blur-sm border-r border-white/10 text-white'>
-            <div className="p-6">
-                <div className="mb-6 p-6 bg-blue-500/10 rounded-lg border border-blue-500/20">
+        <div className='min-h-screen w-64 bg-white border-r border-gray-300 text-gray-800 fixed'>
+            <div >
+                <div className=" p-6 border-b border-black/20">
                     <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                        <span className="text-blue-300 text-sm">Developer</span>
+                        <span className="text-gray-700 text-sm">Developer</span>
                     </div>
-                    <p className="text-blue-200">Hiren</p>
+                    <p className="text-gray-800 font-semibold">Hiren</p>
                 </div>
-                <div className="mb-6 p-6 bg-black-400/10 rounded-lg border border-black-500/20">
+                <div className="space-y-2 mb-6 p-6 border-b border-black/20">
                     <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                        <span className="text-white-300 text-sm">Welcome</span>
+                        <span className="text-sm">Welcome</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        { user === 'Enter your Name' ? <span className="text-gray-400 text-sm truncate">{user}</span> : <span className="text-white font-medium truncate">{user}</span>}
-                        <button onClick={() => setShowNameModal(true)} className="text-gray-400 hover:text-white">
+                        { user === 'Enter your Name' ? <span className="text-gray-600 text-sm truncate">{user}</span> : <span className="text-gray-600 font-medium truncate">{user}</span>}
+                        <button onClick={() => setShowNameModal(true)} className="text-gray-800 hover:text-black">
                             <Pen className="w-4 h-4"/>
                         </button>
                     </div>
@@ -54,7 +54,7 @@ export default function Sidebar({ setActiveTab, activeTab ,exportData,clearData,
                             return (
                                 <button key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg ${activeTab === tab.id ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border border-purple-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg ${activeTab === tab.id ? 'bg-blue-400 text-white' : 'text-gray-700 hover:text-black '}`}>
                                     <Icon className="w-5 h-5"></Icon>
                                     <span className="font-medium">{tab.label}</span>
                                 </button>
@@ -64,18 +64,18 @@ export default function Sidebar({ setActiveTab, activeTab ,exportData,clearData,
 
                 </nav>
                 <div className="mt-8 pt-6 border-t border-white/10">
-                    <p className="text-gray-400 text-sm font-medium mb-3">Quick Actions</p>
+                    <p className="text-gray-700 text-sm font-medium mb-3 ml-2">Quick Actions</p>
                     <div className="space-y-2">
                         <button
                             onClick={exportData}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                            className="w-full flex items-center font-medium space-x-3 px-4 py-2 text-gray-800 hover:text-black  rounded-lg transition-colors"
                         >
                             <Download className="w-4 h-4" />
                             <span className="text-sm">Export Data</span>
                         </button>
                         <button
                             onClick={clearData}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            className="w-full flex items-center space-x-3 px-4 py-2 font-medium text-gray-800 hover:text-red-400 rounded-lg transition-colors"
                         >
                             <Trash2 className="w-4 h-4" />
                             <span className="text-sm">Clear Data</span>
