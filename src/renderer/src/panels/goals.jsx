@@ -33,7 +33,8 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
         startDate: format(new Date(), 'yyyy-MM-dd'),
         endDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         isCompleted: false,
-        subtasks: []
+        subtasks: [],
+        appLinks : []
     })
 
     const resetForm = () => {
@@ -45,12 +46,15 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
             startDate: format(new Date(), 'yyyy-MM-dd'),
             endDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
             isCompleted: false,
-            subtasks: []
+            subtasks: [],
+            appLinks : []
         });
-        setAppLink([]);
+        setAppLink([])
+        
+        
     }
 
-    const handleCreateGoal = async () => {
+    const handleCreateGoal =  () => {
         if (!formData.title.trim()) return;
 
         const newGoal = {
@@ -67,7 +71,8 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
                 createdAt: new Date().toISOString()
             })),
             createdAt: new Date().toISOString(),
-            isCompleted: formData.isCompleted
+            isCompleted: formData.isCompleted,
+            appLinks: formData.appLinks
         };
 
         setGoals([...goals, newGoal]);
@@ -75,11 +80,10 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
         setShowCreateDialog(false);
         window.electron.ipcRenderer.send('add-goal', newGoal);
 
-        if (appLink) {
-            window.electron.ipcRenderer.send('update-app-link', { apps: appLink, goal_id: newGoal.id })
+        if (newGoal.appLinks) {
+            window.electron.ipcRenderer.send('update-app-link', { apps: newGoal.appLinks, goal_id: newGoal.id })
         }
-        await handleRefresh();
-
+         
     };
 
     const handleUpdateGoal = () => {
@@ -97,7 +101,8 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
                 ...subtask,
                 id: subtask.id || Date.now().toString() + Math.random(),
                 createdAt: subtask.createdAt || new Date().toISOString()
-            }))
+            })),
+            appLinks : formData.appLinks 
         }
 
         setGoals(goals.map(goal => goal.id === editingGoal.id ? updatedGoal : goal))
@@ -105,8 +110,8 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
         setEditingGoal(null)
         setShowCreateDialog(false)
         window.electron.ipcRenderer.send('update-goal', updatedGoal);
-        if (appLink) {
-            window.electron.ipcRenderer.send('update-app-link', { apps: appLink, goal_id: newGoal.id })
+        if (updatedGoal.appLinks) {
+            window.electron.ipcRenderer.send('update-app-link', { apps: updatedGoal.appLinks, goal_id: updatedGoal.id })
         }
     }
     const handleDeleteGoal = (goalId) => {  
@@ -216,8 +221,10 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
             priority: goal.priority,
             startDate: goal.startDate,
             endDate: goal.endDate,
-            subtasks: goal.subtasks.map(({ title, completed, id, createdAt }) => ({ title, completed, id, createdAt }))
+            subtasks: goal.subtasks.map(({ title, completed, id, createdAt }) => ({ title, completed, id, createdAt })),
+            appLinks : goal.appLinks
         })
+        setAppLink(goal.appLinks);
         setShowCreateDialog(true)
     }
 
@@ -426,7 +433,7 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
                                     value={formData.title}
                                     autoFocus = {true}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-black placeholder-gray-400 focus:outline-none focus:border-purple-500"
                                     placeholder="Enter your goal title"
                                 />
                             </div>
@@ -437,7 +444,7 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
                                     type="text"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full h-20 resize-none bg-white border border-gray-300 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                                    className="w-full h-20 resize-none bg-white border border-gray-300 rounded-lg px-3 py-2 text-black placeholder-gray-400 focus:outline-none focus:border-purple-500"
                                     placeholder="Describe your goal (optional)"
                                 />
                             </div>
@@ -506,9 +513,9 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
                                 </p>
 
                                 {/* Selected Apps */}
-                                {appLink.length > 0 && (
+                                {formData.appLinks.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mb-3">
-                                        {appLink.map((app, index) => (
+                                        {formData.appLinks.map((app, index) => (
                                             <div
                                                 key={index}
                                                 className="flex items-center space-x-2 bg-blue-500/10 text-blue-700 px-3 py-1 rounded-full text-sm border border-blue-500/30"
@@ -516,7 +523,7 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
                                                 <span>{app}</span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => removeAppLink(app)}
+                                                    onClick={() => setFormData({...formData, appLinks : formData.appLinks.filter(appName => appName !== app)})}
                                                     className="text-blue-700 hover:text-purple-100 transition-colors"
                                                 >
                                                     <Trash2 className="w-3 h-3" />
@@ -548,7 +555,7 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
                                                 <button
                                                     key={index}
                                                     type="button"
-                                                    onClick={() => addAppLink(app)}
+                                                    onClick={() =>setFormData({...formData, appLinks : [...formData.appLinks,app]})}
                                                     className="w-full text-left px-3 py-2 text-gray-700 "
                                                 >
                                                     <div className="flex items-center space-x-2">
@@ -567,11 +574,11 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
                                 <div className="mt-3">
                                     <p className="text-gray-400 text-xs mb-2">Quick add:</p>
                                     <div className="flex flex-wrap gap-2">
-                                        {apps.filter(app => !appLink.includes(app)).map((app) => (
+                                        {apps.filter(app => !formData.appLinks.includes(app)).map((app) => (
                                             <button
                                                 key={app}
                                                 type="button"
-                                                onClick={() => addAppLink(app)}
+                                                onClick={() => setFormData({...formData, appLinks : [...formData.appLinks,app]})}
                                                 className="text-xs font-medium bg-white text-gray-700 px-2 py-1 rounded border border-gray-300"
                                             >
                                                 + {app}

@@ -1,8 +1,12 @@
 const activeWin = require('active-win')
 import { logUsage } from './usageService';
 import {logTimeForGoalApp} from './goalService';
+import { db } from '../database';
+import { updateCapsuleData } from '..';
+
 
 let currentActiveGoalId = null
+
 
 async function Track(){
     try{
@@ -10,14 +14,14 @@ async function Track(){
         if(win && win.owner && win.owner.name){
             const appName = win.owner.name
             logUsage(appName);
+            
 
         if(currentActiveGoalId){
-            console.log("From trackingService: ",currentActiveGoalId);
             logTimeForGoalApp(currentActiveGoalId,appName);
         }
         }
     }catch(err){
-        console.log("err logging current window")
+        console.log("err logging current window", err);
     }
 }
 
@@ -26,7 +30,18 @@ function startTracking(){
 }
 
 function setCurrentActiveGoal(goalId){
-    currentActiveGoalId = goalId
-}
+    currentActiveGoalId = goalId;
+    const todayDate = new Date().toLocaleDateString('en-CA', {
+        timeZone: 'Asia/Kolkata'
+        });
 
-export{startTracking, setCurrentActiveGoal};
+    if(currentActiveGoalId) {
+            let currentActiveGoalTitle = db.prepare("SELECT title FROM goals WHERE id = ?").get(goalId).title;
+            let time = db.prepare("SELECT sum(time) AS total_time FROM GoalAppTimeLog WHERE goal_id = ? AND date = ? GROUP BY goal_id").get(goalId,todayDate).total_time;
+            updateCapsuleData(currentActiveGoalTitle,time);  
+        }  
+}
+function getCurrentActiveGoal(){
+    return currentActiveGoalId;
+}
+export{startTracking, setCurrentActiveGoal,getCurrentActiveGoal};

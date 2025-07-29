@@ -21,7 +21,7 @@ function App() {
   const [streak,setStreak] = useState(0)
 
 
-
+          let goalsData;
           const formatTime = (totalSeconds) => {
           const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, "0");
           const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, "0");
@@ -48,9 +48,9 @@ function App() {
     }, [goals]); 
 
       const handleRefresh = useCallback(async () => {
-          const goalsData = await window.electron.ipcRenderer.invoke('get-goals');
+           goalsData = await window.electron.ipcRenderer.invoke('get-goals');
           setGoals(goalsData);
-      }, []);
+      }, [goalsData]);
   
       const getApps = useCallback(async () => {
           const appsUsed = await window.electron.ipcRenderer.invoke('get-apps');

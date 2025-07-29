@@ -3,4 +3,5 @@
 :root{
      --color-cream-50: rgba(252, 252, 249, 1);
      --color-cream-100: rgba(252, 252, 239, 1);
+     --color-capsule : rgba(30, 41, 59,0.65);
 }

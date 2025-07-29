@@ -10,9 +10,11 @@ const myCache = new NodeCache();
 
 function registerIpcHandlers() {
     //goal handlers
-    ipcMain.handle('get-goals',async () => {
-  return Promise.resolve(goalService.getGoals());});
+    ipcMain.handle('get-goals', () => 
+  goalService.getGoals());
+  
   ipcMain.handle('get-today-productive-time', () => goalService.getTodayProductiveTime());
+  
   ipcMain.handle('get-global-log-streak',(event,minTime) => {
     const todayDate = new Date().toLocaleDateString('en-CA', {
   timeZone: 'Asia/Kolkata'

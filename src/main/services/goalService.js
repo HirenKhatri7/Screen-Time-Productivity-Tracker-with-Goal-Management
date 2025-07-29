@@ -287,7 +287,6 @@ function getGlobalProductiveStreak(minDailyTime = 15*60) {
   `);
 
   const rows = stmt.all(minDailyTime);
-  console.log(rows);
 
   if (rows.length === 0) return 0;
     const todayDate = new Date().toLocaleDateString('en-CA', {

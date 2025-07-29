@@ -5,11 +5,12 @@ import icon from '../../resources/icon.png?asset';
 
 import { initializeDatabase } from './database';
 import { registerIpcHandlers } from './ipcHandlers';
-import { startTracking } from './services/trackingService'
+import { startTracking,getCurrentActiveGoal } from './services/trackingService'
 
 let mainWindow;
 let isQuitting = false;
 let tray;
+let capsuleWindow;
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -27,6 +28,7 @@ function createWindow() {
   
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
+    
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -40,6 +42,18 @@ function createWindow() {
     mainWindow.hide();
   }
 });
+ mainWindow.on('minimize', () => {
+  
+    if (capsuleWindow && getCurrentActiveGoal()) {
+      capsuleWindow.show();
+    }
+  });
+  mainWindow.on('restore', () => {
+  if (capsuleWindow) {
+    capsuleWindow.hide();
+  }
+});
+
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -49,6 +63,37 @@ function createWindow() {
   }
 }
 
+function createCapsuleWindow(){
+  capsuleWindow = new BrowserWindow({
+    width: 300,
+    height: 70,
+    frame: false,      // No window frame (title bar, etc.)
+    alwaysOnTop: true, // Stays on top of other applications
+    resizable: false,
+    transparent: true,
+    skipTaskbar: true, // Doesn't show up in the taskbar
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      contextIsolation:true
+    }
+  });
+
+  // Load a separate HTML file or a specific route for the capsule
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    capsuleWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/capsule.html`);
+  } else {
+    capsuleWindow.loadFile(join(__dirname, '../renderer/capsule.html'));
+  }
+
+  // Hide it by default
+  capsuleWindow.hide();
+  // capsuleWindow.webContents.openDevTools();
+  
+
+  
+
+}
 
 
 function createTray() {
@@ -78,7 +123,9 @@ app.whenReady().then(() => {
   registerIpcHandlers();
 
   createTray();
-  createWindow()
+  createWindow();
+  createCapsuleWindow();
+  
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -86,7 +133,9 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
-
+  ipcMain.on('quit-app', () => {
+    capsuleWindow.hide();
+  })
 
 
 
@@ -98,4 +147,10 @@ app.whenReady().then(() => {
       
   })
 })
+function updateCapsuleData(goalName, timeSpent) {
+  if (capsuleWindow) {
+    capsuleWindow.webContents.send('update-capsule-data', { goalName, timeSpent });
+  }
+}
+export{updateCapsuleData}
 
