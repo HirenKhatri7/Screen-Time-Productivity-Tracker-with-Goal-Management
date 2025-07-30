@@ -8,6 +8,7 @@ function initializeDatabase(){
         CREATE TABLE IF NOT EXISTS usage( id INTEGER PRIMARY KEY AUTOINCREMENT, app_name TEXT, date TEXT, time INTEGER, UNIQUE(app_name,date));
         `
     );
+    db.exec(`CREATE TABLE IF NOT EXISTS apps( app_name TEXT PRIMARY KEY, icon TEXT);`);
     
     db.exec(`CREATE TABLE IF NOT EXISTS username(id INTEGER PRIMARY KEY AUTOINCREMENT, userName TEXT);`)
     db.exec(`

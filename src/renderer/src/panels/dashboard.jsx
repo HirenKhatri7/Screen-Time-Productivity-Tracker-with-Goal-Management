@@ -5,7 +5,7 @@ import { format, startOfDay, subDays } from 'date-fns'
 import ActiveGoalSelector from "../components/ActiveGoalSelector";
 
 
-export default function Dashboard({ userName,activeGoalId, setActiveGoalId,goals }) {
+export default function Dashboard({ userName,activeGoalId, setActiveGoalId,goals,icons}) {
 
   const [usageData, setUsageData] = useState({})
   const [showDialog, setShowDialog] = useState(false)
@@ -300,11 +300,18 @@ const categoryColors = {
                 return (
                   <div key={app} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-300">
                     <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      
+                        {(app in icons) ? 
+                        <div className="w-10 h-10 bg-transparent rounded-lg flex items-center justify-center">
+                        <img src={`data:image/png;base64,${icons[app]}`} alt="Icon" />
+                        </div>
+                        :
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                         <span className="text-gray-800 text-lg font-bold">
+                          
                           {app.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
+                        </span> </div>}
+                      
                       <div>
                         <p className="text-gray-700 font-medium">{app}</p>
                         {limit && (

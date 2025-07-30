@@ -3,30 +3,28 @@ import * as goalService from './services/goalService';
 import * as usageService from './services/usageService';
 import * as userService from './services/userService';
 import * as exportService from './services/exportService';
-import { setCurrentActiveGoal } from './services/trackingService'
+import { setCurrentActiveGoal,getIcons } from './services/trackingService'
 const NodeCache = require('node-cache');
 const myCache = new NodeCache();
 
 
 function registerIpcHandlers() {
     //goal handlers
-    ipcMain.handle('get-goals', () => 
-  goalService.getGoals());
-  
+  ipcMain.handle('get-goals', () => goalService.getGoals());  
   ipcMain.handle('get-today-productive-time', () => goalService.getTodayProductiveTime());
   
   ipcMain.handle('get-global-log-streak',(event,minTime) => {
     const todayDate = new Date().toLocaleDateString('en-CA', {
-  timeZone: 'Asia/Kolkata'
-});
-const cacheKey = `streak-${todayDate}`;
-let streak = myCache.get(cacheKey);
-if (streak == null) {
-    streak = goalService.getGlobalProductiveStreak(minTime) ; // Your streak calc function
-    myCache.set(cacheKey, streak, 60*60*24); // Cache for 24hr
-  }
-  return streak;
-  });
+      timeZone: 'Asia/Kolkata'
+    });
+    const cacheKey = `streak-${todayDate}`;
+    let streak = myCache.get(cacheKey);
+    if (streak == null) {
+        streak = goalService.getGlobalProductiveStreak(minTime) ; // Your streak calc function
+        myCache.set(cacheKey, streak, 60*60*24); // Cache for 24hr
+      }
+      return streak;
+    });
     ipcMain.on('add-goal', (event,goal) => goalService.addGoal(goal));
     ipcMain.on('delete-goal', (event,goalId) => goalService.deleteGoalWithSubtasks(goalId));
     ipcMain.on('update-goal',(event,goal) => goalService.update_goal(goal));
@@ -44,6 +42,9 @@ if (streak == null) {
     //user handlers
     ipcMain.handle('get-username', () => userService.getUserName());
     ipcMain.on('set-username',(event,userName) => userService.setUserName(userName));
+
+    //icon handler
+    ipcMain.handle('get-icons',() => getIcons());
 
     //data handlers
     ipcMain.on('clear-all-data', () => {

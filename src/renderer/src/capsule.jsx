@@ -1,11 +1,10 @@
-import React, { useState, useEffect,useRef } from 'react';
-import { X } from 'lucide-react'; // For the close button
+import React, { useState, useEffect, useRef } from 'react';
+import { X, MinusIcon } from 'lucide-react'; // For the close button
 
 export default function Capsule() {
   const [goalName, setGoalName] = useState('No Active Goal');
   const [timeSpent, setTimeSpent] = useState(0);
-  
-
+  const [minimize, setMinimize] = useState(false)
   const [displayTime, setDisplayTime] = useState(0);
   const lastUpdateRef = useRef(Date.now());
 
@@ -39,6 +38,7 @@ export default function Capsule() {
   };
 
   const formatTime = (seconds) => {
+    console.log(seconds);
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
     const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
@@ -46,14 +46,22 @@ export default function Capsule() {
   };
 
   return (
-    <div className="bg-[var(--color-capsule)] text-white rounded-full w-full h-full flex items-center justify-between px-6 " style={{ WebkitAppRegion: 'drag' }}>
-      <div className="flex flex-col">
-        <span className="text-sm text-white font-bold truncate max-w-40">{goalName}</span>
-        <span className="text-xl text-white font-mono tracking-wider">{formatTime(displayTime)}</span>
+    <>
+      <div className='w-full h-6 bg-blue-500 flex items-center justify-between text-white' style={{ WebkitAppRegion: 'drag', userSelect: 'none' }}>
+        <span className='ml-2 flex items-center  font-semibold text-xl'>{goalName}</span>
+        <div className='flex items-center justify-center'>
+          <button className='bg-transparent ' onClick={() => setMinimize(!minimize)} style={{ WebkitAppRegion: 'no-drag' }}><MinusIcon /></button>
+          <button className='bg-transparent' onClick={handleQuit} style={{ WebkitAppRegion: 'no-drag' }}><X/></button>
+        </div>
       </div>
-      <button onClick={handleQuit} className="bg-red-500/50 hover:bg-red-500 rounded-full p-2 transition-colors" style={{ WebkitAppRegion: 'no-drag' }}>
-        <X size={16} />
-      </button>
-    </div>
+      {minimize && <div className="bg-[var(--color-capsule)] text-white w-full h-auto flex items-center justify-center px-auto " style={{ WebkitAppRegion: 'drag', userSelect: 'none' }}>
+        
+          
+          <span className="text-xl text-white font-mono tracking-wider">{formatTime(displayTime)}</span>
+        
+        
+      </div>}
+    </>
+
   );
 }

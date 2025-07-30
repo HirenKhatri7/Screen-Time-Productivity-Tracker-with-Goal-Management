@@ -16,7 +16,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
-    show: false,
+    show: false, 
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -66,12 +66,13 @@ function createWindow() {
 function createCapsuleWindow(){
   capsuleWindow = new BrowserWindow({
     width: 300,
-    height: 70,
+    height: 80,
     frame: false,      // No window frame (title bar, etc.)
-    alwaysOnTop: true, // Stays on top of other applications
     resizable: false,
     transparent: true,
-    skipTaskbar: true, // Doesn't show up in the taskbar
+    skipTaskbar: true,
+    autoHideMenuBar: true,
+    show:false, // Doesn't show up in the taskbar
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -89,7 +90,7 @@ function createCapsuleWindow(){
   // Hide it by default
   capsuleWindow.hide();
   // capsuleWindow.webContents.openDevTools();
-  
+  capsuleWindow.setAlwaysOnTop(true,"screen");
 
   
 

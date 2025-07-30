@@ -72,7 +72,10 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
             })),
             createdAt: new Date().toISOString(),
             isCompleted: formData.isCompleted,
-            appLinks: formData.appLinks
+            appLinks: formData.appLinks,
+            timeBreakDown : [],
+            productiveTime : 0,
+            unProductiveTime : 0
         };
 
         setGoals([...goals, newGoal]);
@@ -121,7 +124,7 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
     
     
     const handleCompleteGoal = (goalId) => {
-        if (confirm('Are you sure you want to mark this goal as completed?')) {
+        
             setGoals(goals.map(goal => {
 
                 if (goal.id === goalId) {
@@ -143,10 +146,10 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
 
                 return goal;
             }));
-        }
+        
     };
     const handleUncompleteGoal = (goalId) => {
-        if (confirm('Are you sure you want to mark this goal as unComplete?')) {
+        
             setGoals(goals.map(goal => {
 
                 if (goal.id === goalId) {
@@ -166,7 +169,7 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
 
                 return goal;
             }));
-        }
+        
     };
 
     const toggleSubtask = (goalId, subtaskId) => {
@@ -239,9 +242,9 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
         const today = new Date()
         const endDate = new Date(goal.endDate)
 
-        if (progress === 100) return 'completed'
+        if (goal.isCompleted) return 'completed'
         if (isAfter(today, endDate)) return 'overdue'
-        return 'active'
+        if (activeGoalId === goal.id) return 'active'
     }
 
     const filteredGoals = goals.filter(goal => {
@@ -264,17 +267,17 @@ export default function Goals({ userName, activeGoalId, setActiveGoalId, preGoal
     const filteredAppSuggestions = apps.filter(app => app.toLowerCase().includes(appInput.toLowerCase()) && !appLink.includes(app));
 
     const categoryColors = {
-        productivity: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
-        health: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
-        learning: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
-        personal: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
-        work: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' }
+        productivity: { bg: 'bg-purple-500/10', text: 'text-purple-700', border: 'border-purple-500/30' },
+        health: { bg: 'bg-green-500/10', text: 'text-green-700', border: 'border-green-500/30' },
+        learning: { bg: 'bg-blue-500/10', text: 'text-blue-700', border: 'border-blue-500/30' },
+        personal: { bg: 'bg-yellow-500/10', text: 'text-yellow-700', border: 'border-yellow-500/30' },
+        work: { bg: 'bg-red-500/10', text: 'text-red-700', border: 'border-red-500/30' }
     }
 
     const priorityColors = {
-        low: { bg: 'bg-gray-500/20', text: 'text-gray-400' },
-        medium: { bg: 'bg-yellow-500/20', text: 'text-yellow-400' },
-        high: { bg: 'bg-red-500/20', text: 'text-red-400' }
+        low: { bg: 'bg-gray-500/10', text: 'text-gray-700' },
+        medium: { bg: 'bg-yellow-500/10', text: 'text-yellow-700' },
+        high: { bg: 'bg-red-500/10', text: 'text-red-700' }
     }
 
     // Calculate stats

@@ -19,6 +19,7 @@ function App() {
   const [goals, setGoals] = useState([])
   const [productiveTime,setProductiveTime] = useState("")
   const [streak,setStreak] = useState(0)
+  const [icons,setIcons] = useState({})
 
 
           let goalsData;
@@ -50,6 +51,7 @@ function App() {
       const handleRefresh = useCallback(async () => {
            goalsData = await window.electron.ipcRenderer.invoke('get-goals');
           setGoals(goalsData);
+          console.log(goalsData);
       }, [goalsData]);
   
       const getApps = useCallback(async () => {
@@ -102,6 +104,13 @@ function App() {
   return userName.trim().length > 0;
 };
 
+async function getIcons(){
+  const iconObj = await window.electron.ipcRenderer.invoke('get-icons');
+  if(iconObj){
+    setIcons(iconObj);
+  }
+}
+useEffect(() => {getIcons();},[]);
 
   
   return (
@@ -110,7 +119,7 @@ function App() {
         <Sidebar setActiveTab={setActiveTab} activeTab={activeTab} exportData={exportData} clearData={clearData} userName={user} setShowNameModal={setShowNameModal}></Sidebar>
         <div className='flex-1 min-h-screen'>
           <div className='p-8'>
-            {activeTab === 'dashboard' && <Dashboard userName = {user} activeGoalId={activeGoalId} setActiveGoalId = {setActiveGoalId} goals={goals}/>}
+            {activeTab === 'dashboard' && <Dashboard userName = {user} activeGoalId={activeGoalId} setActiveGoalId = {setActiveGoalId} goals={goals} icons={icons}/>}
             {activeTab === 'goals' && <Goals userName = {user} activeGoalId={activeGoalId} setActiveGoalId = {setActiveGoalId} preGoals={goals} apps={apps} handleRefresh = {handleRefresh} getApps = {getApps} preProductiveTime={productiveTime} streak = {streak}/>} 
              {showNameModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">

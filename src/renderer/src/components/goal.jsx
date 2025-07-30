@@ -12,7 +12,10 @@ import LinkedApps from "./LinkedApps";
 export default function Goal({ goal, progress, status, daysLeft, categoryColor, priorityColor, startEdit, handleDeleteGoal, toggleSubtask, handleCompleteGoal, handleUncompleteGoal,activeGoalId,setActiveGoalId }) {
 
     const [ShowDeleteModal, setShowDeleteModal] = useState(false)
+    const [ShowCompleteModal, setShowCompleteModal] = useState(false)
+    const [ShowUnCompleteModal, setShowUnCompleteModal] = useState(false)
     const [activeTab, setActiveTab] = useState('overview')
+
 
     const completedSubtasks = goal.subtasks.filter(subtask => subtask.isCompleted).length;
     const totalTime = goal.productiveTime + goal.unProductiveTime;
@@ -40,7 +43,7 @@ export default function Goal({ goal, progress, status, daysLeft, categoryColor, 
 
     return (
         <div className={`bg-white rounded-lg shadow-sm border-2 transition-all ${goal.id === activeGoalId ? 'border-blue-500 shadow-md' : 'border-gray-200'
-            } ${goal.isCompleted ? 'opacity-75' : ''} `}>
+            }  `}>
             {/* Header */}
             <div className="p-6 border-b border-gray-200">
                 <div className="flex items-start justify-between mb-4">
@@ -107,7 +110,7 @@ export default function Goal({ goal, progress, status, daysLeft, categoryColor, 
                         </>
                     )}
                     <button
-                        onClick={() => {goal.isCompleted ? handleUncompleteGoal(goal.id) : handleCompleteGoal(goal.id)}}
+                        onClick={() => {goal.isCompleted ? setShowUnCompleteModal(true): setShowCompleteModal(true)}}
                         className={`flex items-center px-3 py-2 text-sm rounded-md transition-colors ${goal.isCompleted
                                 ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 : 'bg-green-100 text-green-700 hover:bg-green-200'
@@ -289,6 +292,70 @@ export default function Goal({ goal, progress, status, daysLeft, categoryColor, 
                             </button>
                             <button
                                 onClick={() => { handleDeleteGoal(goal.id); setShowDeleteModal(false); }}
+                                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Yes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {ShowCompleteModal && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-slate-800 rounded-xl p-8 border border-white/10 w-full max-w-md mx-4">
+
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-gray-300 text-sm font-medium mb-2">
+                                    {` Do you want to mark the goal ${goal.title} as complete ?`}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex space-x-3 mt-6">
+                            <button
+                                onClick={() => {
+                                    setShowCompleteModal(false)
+                                }}
+                                className="flex-1 px-4 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                            >
+                                No
+                            </button>
+                            <button
+                                onClick={() => { handleCompleteGoal(goal.id); setShowCompleteModal(false); }}
+                                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Yes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {ShowUnCompleteModal && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-slate-800 rounded-xl p-8 border border-white/10 w-full max-w-md mx-4">
+
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-gray-300 text-sm font-medium mb-2">
+                                    {` Do you want to mark the goal ${goal.title} as incomplete?`}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex space-x-3 mt-6">
+                            <button
+                                onClick={() => {
+                                    setShowUnCompleteModal(false)
+                                }}
+                                className="flex-1 px-4 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                            >
+                                No
+                            </button>
+                            <button
+                                onClick={() => { handleUncompleteGoal(goal.id); setShowUnCompleteModal(false); }}
                                 className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Yes
